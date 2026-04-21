@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌿 나의 롤모델</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+    textarea, input { resize: vertical; outline: none; }
+    button { cursor: pointer; border: none; outline: none; }
+
+    .container { max-width: 640px; margin: 0 auto; padding: 0 16px 100px; }
+    .header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .header-title { font-weight: 700; font-size: 16px; letter-spacing: -0.3px; }
+    .pct-badge { font-size: 13px; color: #3fb950; font-weight: 600; }
+
+    .nav { position: fixed; bottom: 0; left: 0; right: 0; background: #161b22; border-top: 1px solid #30363d; display: flex; justify-content: space-around; padding: 8px 0; z-index: 200; }
+    .nav-btn { background: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 12px; border-radius: 8px; transition: all 0.15s; font-size: 10px; color: #8b949e; }
+    .nav-btn.active { color: #3fb950; font-weight: 600; }
+    .nav-btn-icon { font-size: 20px; }
+
+    .tab-content { display: none; padding-top: 20px; }
+    .tab-content.active { display: block; }
+
+    .login-screen { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0d1117; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .login-screen.active { display: flex; }
+    .login-logo { font-size: 64px; margin-bottom: 20px; }
+    .login-text { font-size: 18px; font-weight: 700; margin-bottom: 40px; text-align: center; }
+    .google-btn { background: #238636; color: #fff; padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .google-btn:hover { background: #2ea043; }
+    .user-info { position: absolute; top: 16px; right: 16px; display: flex; align-items: center; gap: 8px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #30363d; }
+    .logout-btn { background: #da3633; color: #fff; padding: 4px 12px; border-radius: 6px; font-size: 12px; }
+
+    .section-header { font-size: 15px; font-weight: 700; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .edit-btn { background: #1c2128; color: #8b949e; border: 1px solid #30363d; border-radius: 8px; padding: 5px 14px; font-size: 12px; font-weight: 500; }
+    .edit-btn.active { background: #238636; color: #fff; }
+
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .progress-card { background: linear-gradient(135deg, #23863622, #1c212844); border: 1px solid #23863644; border-radius: 16px; padding: 24px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; }
+    .progress-info { flex: 1; }
+    .progress-label { font-size: 12px; color: #8b949e; margin-bottom: 4px; }
+    .progress-pct { font-size: 36px; font-weight: 700; color: #3fb950; }
+    .progress-desc { font-size: 12px; color: #8b949e; margin-top: 2px; }
+    .progress-bar { background: #1c2128; border-radius: 100px; height: 6px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #238636, #3fb950); border-radius: 100px; transition: width 0.4s ease; }
+
+    .category-card { background: #1c2128; border: 1px solid #30363d; border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+    .category-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; }
+    .category-title { display: flex; align-items: center; gap: 10px; }
+    .category-icon { font-size: 18px; }
+    .category-name { font-weight: 600; font-size: 15px; }
+    .category-count { font-size: 12px; color: #8b949e; background: #161b22; border-radius: 20px; padding: 2px 8px; }
+    .category-content { padding: 0 16px 16px; }
+    .item-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid #30363d; }
+    .item-bullet { color: #2ea043; font-size: 12px; }
+    .item-text { flex: 1; font-size: 14px; color: #e6edf3; }
+    .delete-btn { background: none; color: #484f58; font-size: 16px; padding: 0 4px; }
+
+    .checklist { background: #1c2128; border: 1px solid #30363d; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+    .check-item { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-bottom: 1px solid #30363d; transition: background 0.15s; }
+    .check-item.checked { background: #23863622; }
+    .checkbox { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #30363d; background: transparent; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+    .checkbox.checked { border-color: #3fb950; background: #3fb950; }
+    .checkbox-tick { color: #fff; font-size: 13px; font-weight: 700; }
+    .check-text { flex: 1; font-size: 14px; color: #e6edf3; }
+    .check-text.checked { color: #8b949e; text-decoration: line-through; }
+
+    .input-group { display: flex; gap: 8px; margin-bottom: 12px; }
+    .input-text { flex: 1; background: #1c2128; border: 1px solid #30363d; border-radius: 8px; padding: 10px 12px; color: #e6edf3; font-size: 14px; font-family: 'Noto Sans KR', sans-serif; }
+    .btn-add { background: #238636; color: #fff; border-radius: 8px; padding: 10px 16px; font-size: 14px; font-weight: 600; }
+    .btn-add:hover { background: #2ea043; }
+
+    .note-section { margin-bottom: 12px; }
+    .note-label { font-size: 13px; color: #8b949e; margin-bottom: 6px; font-weight: 500; }
+    .note-textarea { width: 100%; background: #1c2128; border: 1px solid #30363d; border-radius: 10px; padding: 12px 14px; color: #e6edf3; font-size: 13px; font-family: 'Noto Sans KR', sans-serif; line-height: 1.7; }
+
+    .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 20px; }
+    .calendar-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 4px; }
+    .day-name { text-align: center; font-size: 11px; color: #8b949e; padding: 4px 0; }
+    .calendar-day { background: #1c2128; border: 1px solid #30363d; border-radius: 8px; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; }
+    .calendar-day.has-data { color: #e6edf3; }
+    .calendar-day.low { background: #0d3320; }
+    .calendar-day.mid { background: #1a5c36; }
+    .calendar-day.high { background: #238636; }
+    .calendar-day.full { background: #2ea043; }
+    .calendar-day.today { border: 2px solid #3fb950; }
+    .calendar-pct { font-size: 9px; color: #7ee787; margin-top: 1px; }
+
+    .legend { display: flex; align-items: center; gap: 8px; margin-top: 20px; justify-content: center; }
+    .legend-text { font-size: 12px; color: #8b949e; }
+    .legend-box { width: 16px; height: 16px; border-radius: 4px; border: 1px solid #30363d; }
+  </style>
+</head>
+<body>
+  <!-- 로그인 화면 -->
+  <div class="login-screen active" id="loginScreen">
+    <div class="login-logo">🌿</div>
+    <div class="login-text">나의 롤모델</div>
+    <button class="google-btn" id="googleLoginBtn">
+      <span>🔐</span> Google로 로그인
+    </button>
+  </div>
+
+  <!-- 메인 앱 -->
+  <div id="appContainer" style="display: none;">
+    <!-- 헤더 -->
+    <div class="header">
+      <div class="header-left">
+        <span style="font-size: 20px;">🌿</span>
+        <span class="header-title">나의 롤모델</span>
+      </div>
+      <div class="header-right">
+        <div id="personFill" style="width: 32px; height: 32px; position: relative;"></div>
+        <span class="pct-badge" id="headerPct">0%</span>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- 홈 탭 -->
+      <div class="tab-content active" id="homeTab">
+        <div class="progress-card">
+          <div style="position: relative; width: 72px; height: 72px;" id="personFillBig"></div>
+          <div class="progress-info">
+            <div class="progress-label">오늘의 나</div>
+            <div class="progress-pct" id="todayPctBig">0%</div>
+            <div class="progress-desc" id="todayMsg">💪 오늘도 화이팅</div>
+          </div>
+        </div>
+
+        <div class="section-header">
+          <span>롤모델 정보</span>
+          <button class="edit-btn" id="editRMBtn">편집</button>
+        </div>
+
+        <div id="rolemodelList"></div>
+
+        <div class="input-group" id="addCatGroup" style="display: none;">
+          <input type="text" class="input-text" id="newCatInput" placeholder="새 카테고리 이름">
+          <button class="btn-add" id="addCatBtn">추가</button>
+        </div>
+      </div>
+
+      <!-- 하루 점검 탭 -->
+      <div class="tab-content" id="dailyTab">
+        <div class="progress-card">
+          <div style="flex: 1;">
+            <div class="progress-label" id="todayDateLabel">2024-01-01</div>
+            <div class="progress-pct" id="dailyPct">0%</div>
+            <div class="progress-desc" id="dailyCompleted">0 / 0 완료</div>
+          </div>
+          <div style="position: relative; width: 80px; height: 80px;" id="personFillDaily"></div>
+        </div>
+        <div style="background: #1c2128; border-radius: 100px; height: 6px; overflow: hidden; margin-bottom: 20px;">
+          <div style="height: 100%; background: linear-gradient(90deg, #238636, #3fb950); border-radius: 100px; transition: width 0.4s ease; width: 0%;" id="dailyProgressBar"></div>
+        </div>
+
+        <div class="section-header">
+          <span>오늘의 체크리스트</span>
+          <button class="edit-btn" id="editDailyBtn">편집</button>
+        </div>
+
+        <div class="checklist" id="dailyChecklist"></div>
+
+        <div class="input-group" id="addDailyGroup" style="display: none;">
+          <input type="text" class="input-text" id="newDailyInput" placeholder="항목 추가...">
+          <button class="btn-add" id="addDailyBtn">추가</button>
+        </div>
+      </div>
+
+      <!-- 주간 점검 탭 -->
+      <div class="tab-content" id="weeklyTab">
+        <div class="progress-card">
+          <div style="flex: 1;">
+            <div class="progress-label" id="weekLabel">2024-W01</div>
+            <div class="progress-pct" id="weeklyPct">0%</div>
+            <div class="progress-desc" id="weeklyCompleted">0 / 0 완료</div>
+          </div>
+          <div style="position: relative; width: 60px; height: 60px;" id="personFillWeekly"></div>
+        </div>
+        <div style="background: #1c2128; border-radius: 100px; height: 5px; margin-bottom: 20px; overflow: hidden;">
+          <div style="height: 100%; background: linear-gradient(90deg, #238636, #3fb950); border-radius: 100px; transition: width 0.4s ease; width: 0%;" id="weeklyProgressBar"></div>
+        </div>
+
+        <div class="section-header">
+          <span>주간 체크리스트</span>
+          <button class="edit-btn" id="editWeeklyBtn">편집</button>
+        </div>
+
+        <div class="checklist" id="weeklyChecklist"></div>
+
+        <div class="input-group" id="addWeeklyGroup" style="display: none;">
+          <input type="text" class="input-text" id="newWeeklyInput" placeholder="항목 추가...">
+          <button class="btn-add" id="addWeeklyBtn">추가</button>
+        </div>
+
+        <h2 style="font-size: 15px; font-weight: 700; margin-bottom: 12px; margin-top: 20px;">이번 주 돌아보기</h2>
+
+        <div class="note-section">
+          <div class="note-label">✨ 롤모델답게 행동한 순간</div>
+          <textarea class="note-textarea" id="weeklyGood" rows="3" placeholder="이번 주 잘 한 점을 적어봐..."></textarea>
+        </div>
+
+        <div class="note-section">
+          <div class="note-label">💭 아쉬웠던 순간 & 다음엔 어떻게?</div>
+          <textarea class="note-textarea" id="weeklyBad" rows="3" placeholder="아쉬웠던 점과 개선 방향을 적어봐..."></textarea>
+        </div>
+
+        <div class="note-section">
+          <div class="note-label">📝 나에게 한 마디</div>
+          <textarea class="note-textarea" id="weeklyMemo" rows="2" placeholder="이번 주 나에게 하고 싶은 말..."></textarea>
+        </div>
+      </div>
+
+      <!-- 달력 탭 -->
+      <div class="tab-content" id="calendarTab">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <button class="edit-btn" style="background: #1c2128;" id="prevMonthBtn">◀</button>
+          <div style="text-align: center;">
+            <div style="font-size: 18px; font-weight: 700;" id="monthLabel">2024년 1월</div>
+            <div style="font-size: 12px; color: #3fb950; margin-top: 2px;" id="monthAvg"></div>
+          </div>
+          <button class="edit-btn" style="background: #1c2128;" id="nextMonthBtn">▶</button>
+        </div>
+
+        <div class="calendar-header" id="calendarHeader"></div>
+        <div class="calendar" id="calendarGrid"></div>
+
+        <div class="legend">
+          <span class="legend-text">적음</span>
+          <div class="legend-box" style="background: #0d3320;"></div>
+          <div class="legend-box" style="background: #1a5c36;"></div>
+          <div class="legend-box" style="background: #238636;"></div>
+          <div class="legend-box" style="background: #2ea043;"></div>
+          <span class="legend-text">많음</span>
+        </div>
+        <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #484f58;">깊이 들어간 초록 = 더 높은 달성률</div>
+      </div>
+    </div>
+
+    <!-- 하단 네비 -->
+    <nav class="nav">
+      <button class="nav-btn active" data-tab="home">
+        <div class="nav-btn-icon">🌿</div>
+        <div class="nav-btn-label">롤모델</div>
+      </button>
+      <button class="nav-btn" data-tab="daily">
+        <div class="nav-btn-icon">✅</div>
+        <div class="nav-btn-label">하루 점검</div>
+      </button>
+      <button class="nav-btn" data-tab="weekly">
+        <div class="nav-btn-icon">📋</div>
+        <div class="nav-btn-label">주간 점검</div>
+      </button>
+      <button class="nav-btn" data-tab="calendar">
+        <div class="nav-btn-icon">📅</div>
+        <div class="nav-btn-label">달력</div>
+      </button>
+    </nav>
+
+    <!-- 사용자 정보 -->
+    <div class="user-info" id="userInfo" style="display: none;">
+      <img id="userAvatar" class="user-avatar" src="" alt="">
+      <button class="logout-btn" id="logoutBtn">로그아웃</button>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+
+  <script>
+    // Firebase 설정
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUCafHEKTo-HfBd_KXcVQniYmD9aoCdEA",
+      authDomain: "rolemodel-4e4d0.firebaseapp.com",
+      projectId: "rolemodel-4e4d0",
+      storageBucket: "rolemodel-4e4d0.firebasestorage.app",
+      messagingSenderId: "654445586270",
+      appId: "1:654445586270:web:8f29a748f574fa6082d1cf"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // 기본 데이터
+    const DEFAULT_ROLEMODEL = [
+      { id: 1, category: "외형", items: ["매일 씻기", "선크림 바르기", "손톱·체모 정리", "단정한 옷차림", "초록색 아이템 지참"] },
+      { id: 2, category: "언행", items: ["말보다 듣는 자세", "감정표현 바로 하기", "말하기 전 생각 정리", "선 넘지 않기", "스몰토크 잘 하기"] },
+      { id: 3, category: "성격·가치관", items: ["안 되는 건 차분하게 거절", "잘못 인정하고 배움 구하기", "주관 유지하면서 타인 의견 수용", "책임감 있게 행동"] },
+      { id: 4, category: "생활 습관", items: ["아침 명상·스트레칭·이불 정리", "저녁 명상", "10시 이후 폰 끄기", "자기 전 독서", "하루 되돌아보기"] },
+      { id: 5, category: "디지털·미디어", items: ["대화·식사 중 폰 안 보기", "건강한 알고리즘 유지", "SNS 최소화"] },
+      { id: 6, category: "예술·지적생활", items: ["예술 콘텐츠 감상", "감상 구체적으로 표현하기", "꾸준히 읽고 배우기"] },
+      { id: 7, category: "경제관념", items: ["경제 관심 유지·투자 점검", "충동 소비 하지 않기", "시간을 아끼기"] }
+    ];
+
+    const DEFAULT_DAILY = ["씻기", "선크림", "이불 정리", "아침 명상·스트레칭", "대화 중 폰 안 보기", "저녁 명상", "10시 이후 폰 끄기", "자기 전 독서", "하루 되돌아보기", "환기"];
+    const DEFAULT_WEEKLY = ["방 청소", "불필요한 물건 정리·버리기", "내가 먼저 연락 2~3회", "예술·문화 콘텐츠 1개", "경제 공부·투자 점검", "운동 3회 이상", "약속 30분 전 도착", "물건 제자리 정리"];
+
+    // 상태
+    let user = null;
+    let rolemodel = [];
+    let dailyItems = [];
+    let weeklyItems = [];
+    let dailyChecks = {};
+    let weeklyChecks = {};
+    let weeklyNotes = {};
+    let currentMonth = { y: new Date().getFullYear(), m: new Date().getMonth() };
+
+    // 초기화
+    auth.onAuthStateChanged(async (u) => {
+      if (u) {
+        user = u;
+        document.getElementById("loginScreen").classList.remove("active");
+        document.getElementById("appContainer").style.display = "block";
+        document.getElementById("userInfo").style.display = "flex";
+        document.getElementById("userAvatar").src = u.photoURL || "https://ui-avatars.com/api/?name=" + u.displayName;
+        
+        await loadData();
+        render();
+      } else {
+        document.getElementById("loginScreen").classList.add("active");
+        document.getElementById("appContainer").style.display = "none";
+      }
+    });
+
+    document.getElementById("googleLoginBtn").addEventListener("click", () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider);
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      auth.signOut();
+    });
+
+    // 데이터 로드
+    async function loadData() {
+      try {
+        const docRef = db.collection("users").doc(user.uid);
+        const doc = await docRef.get();
+        if (doc.exists) {
+          const data = doc.data();
+          rolemodel = data.rolemodel || DEFAULT_ROLEMODEL;
+          dailyItems = data.dailyItems || DEFAULT_DAILY;
+          weeklyItems = data.weeklyItems || DEFAULT_WEEKLY;
+          dailyChecks = data.dailyChecks || {};
+          weeklyChecks = data.weeklyChecks || {};
+          weeklyNotes = data.weeklyNotes || {};
+        } else {
+          rolemodel = DEFAULT_ROLEMODEL;
+          dailyItems = DEFAULT_DAILY;
+          weeklyItems = DEFAULT_WEEKLY;
+          await saveData();
+        }
+      } catch (e) {
+        console.error("데이터 로드 실패:", e);
+      }
+    }
+
+    // 데이터 저장
+    async function saveData() {
+      try {
+        await db.collection("users").doc(user.uid).set({
+          rolemodel, dailyItems, weeklyItems, dailyChecks, weeklyChecks, weeklyNotes, updatedAt: new Date()
+        }, { merge: true });
+      } catch (e) {
+        console.error("데이터 저장 실패:", e);
+      }
+    }
+
+    // 유틸리티
+    function todayKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    }
+
+    function weekKey() {
+      const d = new Date();
+      const jan1 = new Date(d.getFullYear(), 0, 1);
+      const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+      return `${d.getFullYear()}-W${String(week).padStart(2,"0")}`;
+    }
+
+    function getDaysInMonth(y, m) {
+      return new Date(y, m + 1, 0).getDate();
+    }
+
+    function getFirstDayOfMonth(y, m) {
+      return new Date(y, m, 1).getDay();
+    }
+
+    function personFill(pct, size = 48) {
+      const colors = ["#8b949e", "#f0a500", "#3fb950"];
+      const color = pct >= 80 ? colors[2] : pct >= 50 ? colors[1] : colors[0];
+      return `<svg width="${size}" height="${size}" viewBox="0 0 40 40">
+        <circle cx="20" cy="20" r="18" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+        <clipPath id="clip">
+          <rect x="0" y="${40 - (40 * pct / 100)}" width="40" height="40"/>
+        </clipPath>
+        <circle cx="20" cy="20" r="18" fill="${pct>0?color:"transparent"}" clip-path="url(#clip)" opacity="0.85"/>
+        <g fill="#0d1117" opacity="0.9">
+          <circle cx="20" cy="14" r="5"/>
+          <path d="M10 30 Q10 22 20 22 Q30 22 30 30 L30 32 L10 32 Z"/>
+        </g>
+      </svg>`;
+    }
+
+    // 렌더링
+    function render() {
+      const today = todayKey();
+      const todayChecked = dailyChecks[today] || {};
+      const todayPct = dailyItems.length === 0 ? 0 : Math.round(Object.values(todayChecked).filter(Boolean).length / dailyItems.length * 100);
+
+      // 헤더
+      document.getElementById("personFill").innerHTML = personFill(todayPct, 32);
+      document.getElementById("headerPct").textContent = todayPct + "%";
+
+      // 홈 탭
+      document.getElementById("personFillBig").innerHTML = personFill(todayPct, 72);
+      document.getElementById("todayPctBig").textContent = todayPct + "%";
+      document.getElementById("todayMsg").textContent = todayPct >= 80 ? "🌿 롤모델에 가까운 하루" : todayPct >= 50 ? "🌱 잘 하고 있어" : "💪 오늘도 화이팅";
+
+      renderRolemodel();
+      renderDaily();
+      renderWeekly();
+      renderCalendar();
+    }
+
+    function renderRolemodel() {
+      const html = rolemodel.map(cat => `
+        <div class="category-card">
+          <div class="category-header" onclick="toggleCategory(this)">
+            <div class="category-title">
+              <span class="category-icon">🌿</span>
+              <span class="category-name">${cat.category}</span>
+              <span class="category-count">${cat.items.length}</span>
+            </div>
+            <span style="color: #8b949e; font-size: 12px;">▼</span>
+          </div>
+          <div class="category-content" style="display: none;">
+            ${cat.items.map((item, i) => `
+              <div class="item-row">
+                <span class="item-bullet">•</span>
+                <span class="item-text">${item}</span>
+                <button class="delete-btn" onclick="deleteRMItem(${cat.id}, ${i})">✕</button>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `).join("");
+
+      document.getElementById("rolemodelList").innerHTML = html;
+
+      document.querySelectorAll(".category-header").forEach(el => {
+        el.addEventListener("click", function(e) {
+          if (e.target.closest(".delete-btn")) return;
+          const content = this.nextElementSibling;
+          const isOpen = content.style.display !== "none";
+          content.style.display = isOpen ? "none" : "block";
+          this.querySelector("span:last-child").textContent = isOpen ? "▼" : "▲";
+        });
+      });
+    }
+
+    function renderDaily() {
+      const today = todayKey();
+      const todayChecked = dailyChecks[today] || {};
+      const checked = Object.values(todayChecked).filter(Boolean).length;
+      const total = dailyItems.length;
+      const pct = total === 0 ? 0 : Math.round(checked / total * 100);
+
+      document.getElementById("todayDateLabel").textContent = today;
+      document.getElementById("dailyPct").textContent = pct + "%";
+      document.getElementById("dailyCompleted").textContent = `${checked} / ${total} 완료`;
+      document.getElementById("personFillDaily").innerHTML = personFill(pct, 80);
+      document.getElementById("dailyProgressBar").style.width = pct + "%";
+
+      const html = dailyItems.map((item, i) => `
+        <div class="check-item ${todayChecked[i] ? "checked" : ""}">
+          <button class="checkbox ${todayChecked[i] ? "checked" : ""}" onclick="toggleDaily(${i})">
+            ${todayChecked[i] ? '<span class="checkbox-tick">✓</span>' : ""}
+          </button>
+          <span class="check-text ${todayChecked[i] ? "checked" : ""}">${item}</span>
+          <button class="delete-btn" onclick="deleteDailyItem(${i})">✕</button>
+        </div>
+      `).join("");
+
+      document.getElementById("dailyChecklist").innerHTML = html;
+    }
+
+    function renderWeekly() {
+      const wk = weekKey();
+      const wChecked = weeklyChecks[wk] || {};
+      const checked = Object.values(wChecked).filter(Boolean).length;
+      const pct = weeklyItems.length === 0 ? 0 : Math.round(checked / weeklyItems.length * 100);
+
+      document.getElementById("weekLabel").textContent = wk;
+      document.getElementById("weeklyPct").textContent = pct + "%";
+      document.getElementById("weeklyCompleted").textContent = `${checked} / ${weeklyItems.length} 완료`;
+      document.getElementById("personFillWeekly").innerHTML = personFill(pct, 60);
+      document.getElementById("weeklyProgressBar").style.width = pct + "%";
+
+      const html = weeklyItems.map((item, i) => `
+        <div class="check-item ${wChecked[i] ? "checked" : ""}">
+          <button class="checkbox ${wChecked[i] ? "checked" : ""}" onclick="toggleWeekly(${i})">
+            ${wChecked[i] ? '<span class="checkbox-tick">✓</span>' : ""}
+          </button>
+          <span class="check-text ${wChecked[i] ? "checked" : ""}">${item}</span>
+          <button class="delete-btn" onclick="deleteWeeklyItem(${i})">✕</button>
+        </div>
+      `).join("");
+
+      document.getElementById("weeklyChecklist").innerHTML = html;
+
+      const wNotes = weeklyNotes[wk] || { good: "", bad: "", memo: "" };
+      document.getElementById("weeklyGood").value = wNotes.good || "";
+      document.getElementById("weeklyBad").value = wNotes.bad || "";
+      document.getElementById("weeklyMemo").value = wNotes.memo || "";
+    }
+
+    function renderCalendar() {
+      const { y, m } = currentMonth;
+      const days = getDaysInMonth(y, m);
+      const firstDay = getFirstDayOfMonth(y, m);
+      const dayNames = ["일","월","화","수","목","금","토"];
+      const monthNames = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
+
+      document.getElementById("monthLabel").textContent = `${y}년 ${monthNames[m]}`;
+
+      // 요일 헤더
+      document.getElementById("calendarHeader").innerHTML = dayNames.map(d => `<div class="day-name">${d}</div>`).join("");
+
+      // 날짜 그리드
+      let totalPct = 0, cnt = 0;
+      const cells = [];
+      for (let i = 0; i < firstDay; i++) cells.push(null);
+      for (let d = 1; d <= days; d++) cells.push(d);
+
+      const today = new Date();
+      const isToday = (day) => today.getFullYear() === y && today.getMonth() === m && today.getDate() === day;
+
+      const html = cells.map(day => {
+        if (!day) return `<div></div>`;
+        const key = `${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+        const checked = dailyChecks[key] || {};
+        const cnt = Object.values(checked).filter(Boolean).length;
+        const pct = dailyItems.length === 0 ? 0 : Math.round(cnt / dailyItems.length * 100);
+
+        if (pct > 0) { totalPct += pct; cnt++; }
+
+        const getColor = () => pct === 0 ? "" : pct < 30 ? "low" : pct < 60 ? "mid" : pct < 80 ? "high" : "full";
+        const color = getColor();
+
+        return `<div class="calendar-day ${color} ${isToday(day) ? "today" : ""}">
+          <span>${day}</span>
+          ${pct > 0 ? `<div class="calendar-pct">${pct}%</div>` : ""}
+        </div>`;
+      }).join("");
+
+      document.getElementById("calendarGrid").innerHTML = html;
+
+      const avgPct = cnt > 0 ? Math.round(totalPct / cnt) : 0;
+      document.getElementById("monthAvg").textContent = cnt > 0 ? `이번달 평균 ${avgPct}%` : "";
+    }
+
+    // 이벤트 핸들러
+    function toggleDaily(i) {
+      const today = todayKey();
+      dailyChecks[today] = dailyChecks[today] || {};
+      dailyChecks[today][i] = !dailyChecks[today][i];
+      saveData();
+      render();
+    }
+
+    function toggleWeekly(i) {
+      const wk = weekKey();
+      weeklyChecks[wk] = weeklyChecks[wk] || {};
+      weeklyChecks[wk][i] = !weeklyChecks[wk][i];
+      saveData();
+      render();
+    }
+
+    function deleteDailyItem(i) {
+      dailyItems.splice(i, 1);
+      saveData();
+      render();
+    }
+
+    function deleteWeeklyItem(i) {
+      weeklyItems.splice(i, 1);
+      saveData();
+      render();
+    }
+
+    function deleteRMItem(catId, itemIdx) {
+      const cat = rolemodel.find(c => c.id === catId);
+      if (cat) cat.items.splice(itemIdx, 1);
+      saveData();
+      render();
+    }
+
+    // 탭 네비게이션
+    document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(tab + "Tab").classList.add("active");
+      });
+    });
+
+    // 편집 모드
+    document.getElementById("editRMBtn").addEventListener("click", function() {
+      this.classList.toggle("active");
+      document.getElementById("addCatGroup").style.display = this.classList.contains("active") ? "flex" : "none";
+      document.querySelectorAll(".delete-btn").forEach(btn => {
+        btn.style.display = this.classList.contains("active") ? "block" : "none";
+      });
+      this.textContent = this.classList.contains("active") ? "완료" : "편집";
+    });
+
+    document.getElementById("editDailyBtn").addEventListener("click", function() {
+      this.classList.toggle("active");
+      document.getElementById("addDailyGroup").style.display = this.classList.contains("active") ? "flex" : "none";
+      document.querySelectorAll("#dailyChecklist .delete-btn").forEach(btn => {
+        btn.style.display = this.classList.contains("active") ? "block" : "none";
+      });
+      this.textContent = this.classList.contains("active") ? "완료" : "편집";
+    });
+
+    document.getElementById("editWeeklyBtn").addEventListener("click", function() {
+      this.classList.toggle("active");
+      document.getElementById("addWeeklyGroup").style.display = this.classList.contains("active") ? "flex" : "none";
+      document.querySelectorAll("#weeklyChecklist .delete-btn").forEach(btn => {
+        btn.style.display = this.classList.contains("active") ? "block" : "none";
+      });
+      this.textContent = this.classList.contains("active") ? "완료" : "편집";
+    });
+
+    // 추가 버튼
+    document.getElementById("addCatBtn").addEventListener("click", () => {
+      const text = document.getElementById("newCatInput").value.trim();
+      if (!text) return;
+      rolemodel.push({ id: Date.now(), category: text, items: [] });
+      document.getElementById("newCatInput").value = "";
+      saveData();
+      render();
+    });
+
+    document.getElementById("addDailyBtn").addEventListener("click", () => {
+      const text = document.getElementById("newDailyInput").value.trim();
+      if (!text) return;
+      dailyItems.push(text);
+      document.getElementById("newDailyInput").value = "";
+      saveData();
+      render();
+    });
+
+    document.getElementById("addWeeklyBtn").addEventListener("click", () => {
+      const text = document.getElementById("newWeeklyInput").value.trim();
+      if (!text) return;
+      weeklyItems.push(text);
+      document.getElementById("newWeeklyInput").value = "";
+      saveData();
+      render();
+    });
+
+    // 주간 노트 저장
+    document.getElementById("weeklyGood").addEventListener("change", () => {
+      const wk = weekKey();
+      weeklyNotes[wk] = weeklyNotes[wk] || {};
+      weeklyNotes[wk].good = document.getElementById("weeklyGood").value;
+      saveData();
+    });
+
+    document.getElementById("weeklyBad").addEventListener("change", () => {
+      const wk = weekKey();
+      weeklyNotes[wk] = weeklyNotes[wk] || {};
+      weeklyNotes[wk].bad = document.getElementById("weeklyBad").value;
+      saveData();
+    });
+
+    document.getElementById("weeklyMemo").addEventListener("change", () => {
+      const wk = weekKey();
+      weeklyNotes[wk] = weeklyNotes[wk] || {};
+      weeklyNotes[wk].memo = document.getElementById("weeklyMemo").value;
+      saveData();
+    });
+
+    // 달력 네비
+    document.getElementById("prevMonthBtn").addEventListener("click", () => {
+      currentMonth.m--;
+      if (currentMonth.m < 0) { currentMonth.m = 11; currentMonth.y--; }
+      renderCalendar();
+    });
+
+    document.getElementById("nextMonthBtn").addEventListener("click", () => {
+      currentMonth.m++;
+      if (currentMonth.m > 11) { currentMonth.m = 0; currentMonth.y++; }
+      renderCalendar();
+    });
+
+    function toggleCategory(el) {
+      const content = el.nextElementSibling;
+      content.style.display = content.style.display === "none" ? "block" : "none";
+      el.querySelector("span:last-child").textContent = content.style.display === "none" ? "▼" : "▲";
+    }
+  </script>
+</body>
+</html>
