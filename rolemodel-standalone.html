@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌿 나의 롤모델</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: #0d1117; color: #e6edf3; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+    textarea { resize: vertical; }
+    input[type=text] { outline: none; }
+    button { cursor: pointer; border: none; outline: none; font-family: 'Noto Sans KR', sans-serif; }
+    textarea, input { font-family: 'Noto Sans KR', sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // ─── 기본 데이터 ──────────────────────────────────────────
+    const DEFAULT_ROLEMODEL = [
+      { id: 1, category: "외형", items: ["매일 씻기", "선크림 바르기", "손톱·체모 정리", "단정한 옷차림", "초록색 아이템 지참"] },
+      { id: 2, category: "언행", items: ["말보다 듣는 자세", "감정표현 바로 하기", "말하기 전 생각 정리", "선 넘지 않기", "스몰토크 잘 하기"] },
+      { id: 3, category: "성격·가치관", items: ["안 되는 건 차분하게 거절", "잘못 인정하고 배움 구하기", "주관 유지하면서 타인 의견 수용", "책임감 있게 행동"] },
+      { id: 4, category: "생활 습관", items: ["아침 명상·스트레칭·이불 정리", "저녁 명상", "10시 이후 폰 끄기", "자기 전 독서", "하루 되돌아보기"] },
+      { id: 5, category: "디지털·미디어", items: ["대화·식사 중 폰 안 보기", "건강한 알고리즘 유지", "SNS 최소화"] },
+      { id: 6, category: "예술·지적생활", items: ["예술 콘텐츠 감상", "감상 구체적으로 표현하기", "꾸준히 읽고 배우기"] },
+      { id: 7, category: "경제관념", items: ["경제 관심 유지·투자 점검", "충동 소비 하지 않기", "시간을 아끼기"] },
+    ];
+    const DEFAULT_DAILY = ["씻기", "선크림", "이불 정리", "아침 명상·스트레칭", "대화 중 폰 안 보기", "저녁 명상", "10시 이후 폰 끄기", "자기 전 독서", "하루 되돌아보기", "환기"];
+    const DEFAULT_WEEKLY = ["방 청소", "불필요한 물건 정리·버리기", "내가 먼저 연락 2~3회", "예술·문화 콘텐츠 1개", "경제 공부·투자 점검", "운동 3회 이상", "약속 30분 전 도착", "물건 제자리 정리"];
+
+    // ─── 유틸 ─────────────────────────────────────────────────
+    function todayKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    }
+    function weekKey() {
+      const d = new Date();
+      const jan1 = new Date(d.getFullYear(), 0, 1);
+      const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+      return `${d.getFullYear()}-W${String(week).padStart(2,"0")}`;
+    }
+    function getDaysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+    function getFirstDayOfMonth(y, m) { return new Date(y, m, 1).getDay(); }
+
+    function lsGet(key, fallback) {
+      try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+    }
+    function lsSet(key, val) {
+      try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+    }
+
+    // ─── 색상 ─────────────────────────────────────────────────
+    const C = {
+      bg: "#0d1117", surface: "#161b22", surface2: "#1c2128", border: "#30363d",
+      green: "#2ea043", greenLight: "#3fb950", greenDim: "#238636",
+      text: "#e6edf3", textSub: "#8b949e", textMuted: "#484f58",
+    };
+
+    // ─── 사람 SVG ─────────────────────────────────────────────
+    function PersonFill({ pct, size = 48 }) {
+      const color = pct >= 80 ? C.greenLight : pct >= 50 ? "#f0a500" : "#8b949e";
+      const clipId = `clip-${size}-${pct}`;
+      return (
+        <div style={{ position:"relative", width:size, height:size, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <svg width={size} height={size} viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="18" fill={C.surface2} stroke={C.border} strokeWidth="1.5"/>
+            <clipPath id={clipId}>
+              <rect x="0" y={40 - (40 * pct / 100)} width="40" height="40"/>
+            </clipPath>
+            <circle cx="20" cy="20" r="18" fill={pct > 0 ? color : "transparent"} clipPath={`url(#${clipId})`} opacity="0.85"/>
+            <g fill={C.bg} opacity="0.9">
+              <circle cx="20" cy="14" r="5"/>
+              <path d="M10 30 Q10 22 20 22 Q30 22 30 30 L30 32 L10 32 Z"/>
+            </g>
+          </svg>
+        </div>
+      );
+    }
+
+    // ─── 메인 앱 ──────────────────────────────────────────────
+    function App() {
+      const [tab, setTab] = useState("home");
+      const [rolemodel, setRolemodel] = useState(() => lsGet("rm_rolemodel", DEFAULT_ROLEMODEL));
+      const [dailyItems, setDailyItems] = useState(() => lsGet("rm_daily", DEFAULT_DAILY));
+      const [weeklyItems, setWeeklyItems] = useState(() => lsGet("rm_weekly", DEFAULT_WEEKLY));
+      const [dailyChecks, setDailyChecks] = useState(() => lsGet("rm_dailychecks", {}));
+      const [weeklyChecks, setWeeklyChecks] = useState(() => lsGet("rm_weeklychecks", {}));
+      const [weeklyNotes, setWeeklyNotes] = useState(() => lsGet("rm_weeklynotes", {}));
+      const [calMonth, setCalMonth] = useState({ y: new Date().getFullYear(), m: new Date().getMonth() });
+      const [editRM, setEditRM] = useState(false);
+      const [editDaily, setEditDaily] = useState(false);
+      const [editWeekly, setEditWeekly] = useState(false);
+
+      useEffect(() => { lsSet("rm_rolemodel", rolemodel); }, [rolemodel]);
+      useEffect(() => { lsSet("rm_daily", dailyItems); }, [dailyItems]);
+      useEffect(() => { lsSet("rm_weekly", weeklyItems); }, [weeklyItems]);
+      useEffect(() => { lsSet("rm_dailychecks", dailyChecks); }, [dailyChecks]);
+      useEffect(() => { lsSet("rm_weeklychecks", weeklyChecks); }, [weeklyChecks]);
+      useEffect(() => { lsSet("rm_weeklynotes", weeklyNotes); }, [weeklyNotes]);
+
+      const today = todayKey();
+      const todayChecked = dailyChecks[today] || {};
+      const todayPct = dailyItems.length === 0 ? 0 : Math.round(Object.values(todayChecked).filter(Boolean).length / dailyItems.length * 100);
+
+      const tabs = [
+        { key:"home", icon:"🌿", label:"롤모델" },
+        { key:"daily", icon:"✅", label:"하루 점검" },
+        { key:"weekly", icon:"📋", label:"주간 점검" },
+        { key:"calendar", icon:"📅", label:"달력" },
+      ];
+
+      return (
+        <div style={{ background:C.bg, minHeight:"100vh", color:C.text, paddingBottom:80 }}>
+          {/* 헤더 */}
+          <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <span style={{ fontSize:20 }}>🌿</span>
+              <span style={{ fontWeight:700, fontSize:16 }}>나의 롤모델</span>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <PersonFill pct={todayPct} size={32} />
+              <span style={{ fontSize:13, color:C.greenLight, fontWeight:600 }}>{todayPct}%</span>
+            </div>
+          </div>
+
+          {/* 탭 내용 */}
+          <div style={{ maxWidth:640, margin:"0 auto", padding:"0 16px" }}>
+            {tab === "home" && <HomeTab rolemodel={rolemodel} setRolemodel={setRolemodel} editRM={editRM} setEditRM={setEditRM} todayPct={todayPct} />}
+            {tab === "daily" && <DailyTab dailyItems={dailyItems} setDailyItems={setDailyItems} dailyChecks={dailyChecks} setDailyChecks={setDailyChecks} today={today} editDaily={editDaily} setEditDaily={setEditDaily} />}
+            {tab === "weekly" && <WeeklyTab weeklyItems={weeklyItems} setWeeklyItems={setWeeklyItems} weeklyChecks={weeklyChecks} setWeeklyChecks={setWeeklyChecks} weeklyNotes={weeklyNotes} setWeeklyNotes={setWeeklyNotes} editWeekly={editWeekly} setEditWeekly={setEditWeekly} />}
+            {tab === "calendar" && <CalendarTab dailyChecks={dailyChecks} dailyItems={dailyItems} calMonth={calMonth} setCalMonth={setCalMonth} />}
+          </div>
+
+          {/* 하단 네비 */}
+          <nav style={{ position:"fixed", bottom:0, left:0, right:0, background:C.surface, borderTop:`1px solid ${C.border}`, display:"flex", justifyContent:"space-around", padding:"8px 0", zIndex:200 }}>
+            {tabs.map(t => (
+              <button key={t.key} onClick={() => setTab(t.key)} style={{ background:"none", display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"4px 12px", borderRadius:8 }}>
+                <span style={{ fontSize:20 }}>{t.icon}</span>
+                <span style={{ fontSize:10, color:tab===t.key?C.greenLight:C.textSub, fontWeight:tab===t.key?600:400 }}>{t.label}</span>
+                {tab===t.key && <div style={{ width:4, height:4, borderRadius:"50%", background:C.greenLight }}/>}
+              </button>
+            ))}
+          </nav>
+        </div>
+      );
+    }
+
+    // ─── 홈 탭 ────────────────────────────────────────────────
+    function HomeTab({ rolemodel, setRolemodel, editRM, setEditRM, todayPct }) {
+      const [newCat, setNewCat] = useState("");
+      const [expandedCat, setExpandedCat] = useState(null);
+
+      const addCategory = () => {
+        if (!newCat.trim()) return;
+        setRolemodel(prev => [...prev, { id: Date.now(), category: newCat.trim(), items: [] }]);
+        setNewCat("");
+      };
+      const deleteCategory = (id) => setRolemodel(prev => prev.filter(c => c.id !== id));
+      const addItem = (catId, text) => {
+        if (!text.trim()) return;
+        setRolemodel(prev => prev.map(c => c.id === catId ? {...c, items:[...c.items, text.trim()]} : c));
+      };
+      const deleteItem = (catId, idx) => {
+        setRolemodel(prev => prev.map(c => c.id === catId ? {...c, items: c.items.filter((_,i)=>i!==idx)} : c));
+      };
+
+      const msg = todayPct >= 80 ? "🌿 롤모델에 가까운 하루" : todayPct >= 50 ? "🌱 잘 하고 있어" : "💪 오늘도 화이팅";
+      const pctColor = todayPct >= 80 ? C.greenLight : todayPct >= 50 ? "#f0a500" : C.textSub;
+
+      return (
+        <div style={{ paddingTop:20 }}>
+          <div style={{ background:`linear-gradient(135deg, ${C.greenDim}22, ${C.surface2})`, border:`1px solid ${C.greenDim}44`, borderRadius:16, padding:"24px 20px", marginBottom:20, display:"flex", alignItems:"center", gap:20 }}>
+            <PersonFill pct={todayPct} size={72} />
+            <div>
+              <div style={{ fontSize:12, color:C.textSub, marginBottom:4 }}>오늘의 나</div>
+              <div style={{ fontSize:36, fontWeight:700, color:pctColor }}>{todayPct}%</div>
+              <div style={{ fontSize:12, color:C.textSub, marginTop:2 }}>{msg}</div>
+            </div>
+          </div>
+
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+            <h2 style={{ fontSize:16, fontWeight:700 }}>롤모델 정보</h2>
+            <button onClick={() => setEditRM(!editRM)} style={{ background:editRM?C.greenDim:C.surface2, color:editRM?C.text:C.textSub, border:`1px solid ${C.border}`, borderRadius:8, padding:"5px 14px", fontSize:12, fontWeight:500 }}>
+              {editRM ? "완료" : "편집"}
+            </button>
+          </div>
+
+          {rolemodel.map(cat => (
+            <CategoryCard key={cat.id} cat={cat} editRM={editRM} expanded={expandedCat===cat.id} onToggle={()=>setExpandedCat(expandedCat===cat.id?null:cat.id)} onAddItem={addItem} onDeleteItem={deleteItem} onDeleteCat={deleteCategory} />
+          ))}
+
+          {editRM && (
+            <div style={{ display:"flex", gap:8, marginTop:12 }}>
+              <input value={newCat} onChange={e=>setNewCat(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCategory()} placeholder="새 카테고리 이름" style={{ flex:1, background:C.surface2, border:`1px solid ${C.border}`, borderRadius:8, padding:"10px 12px", color:C.text, fontSize:14 }} />
+              <button onClick={addCategory} style={{ background:C.greenDim, color:C.text, borderRadius:8, padding:"10px 16px", fontSize:14, fontWeight:600 }}>추가</button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function CategoryCard({ cat, editRM, expanded, onToggle, onAddItem, onDeleteItem, onDeleteCat }) {
+      const [newItem, setNewItem] = useState("");
+      const handleAdd = () => { onAddItem(cat.id, newItem); setNewItem(""); };
+
+      return (
+        <div style={{ background:C.surface2, border:`1px solid ${C.border}`, borderRadius:12, marginBottom:10, overflow:"hidden" }}>
+          <div onClick={onToggle} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", cursor:"pointer" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <span style={{ fontSize:18 }}>🌿</span>
+              <span style={{ fontWeight:600, fontSize:15 }}>{cat.category}</span>
+              <span style={{ fontSize:12, color:C.textSub, background:C.surface, borderRadius:20, padding:"2px 8px" }}>{cat.items.length}</span>
+            </div>
+            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+              {editRM && <button onClick={e=>{e.stopPropagation();onDeleteCat(cat.id)}} style={{ background:"#da3633", color:"#fff", border:"none", borderRadius:6, padding:"3px 8px", fontSize:11 }}>삭제</button>}
+              <span style={{ color:C.textSub, fontSize:12 }}>{expanded?"▲":"▼"}</span>
+            </div>
+          </div>
+          {expanded && (
+            <div style={{ padding:"0 16px 16px" }}>
+              {cat.items.map((item,i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 0", borderTop:`1px solid ${C.border}` }}>
+                  <span style={{ color:C.green, fontSize:12 }}>•</span>
+                  <span style={{ flex:1, fontSize:14, color:C.text }}>{item}</span>
+                  {editRM && <button onClick={()=>onDeleteItem(cat.id,i)} style={{ background:"none", color:C.textMuted, fontSize:16, padding:"0 4px" }}>✕</button>}
+                </div>
+              ))}
+              {editRM && (
+                <div style={{ display:"flex", gap:8, marginTop:10 }}>
+                  <input value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleAdd()} placeholder="항목 추가..." style={{ flex:1, background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 12px", color:C.text, fontSize:13 }} />
+                  <button onClick={handleAdd} style={{ background:C.greenDim, color:C.text, borderRadius:8, padding:"8px 14px", fontSize:13 }}>+</button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ─── 하루 점검 탭 ─────────────────────────────────────────
+    function DailyTab({ dailyItems, setDailyItems, dailyChecks, setDailyChecks, today, editDaily, setEditDaily }) {
+      const [newItem, setNewItem] = useState("");
+      const todayChecked = dailyChecks[today] || {};
+      const checked = Object.values(todayChecked).filter(Boolean).length;
+      const total = dailyItems.length;
+      const pct = total === 0 ? 0 : Math.round(checked / total * 100);
+      const pctColor = pct >= 80 ? C.greenLight : pct >= 50 ? "#f0a500" : C.textSub;
+
+      const toggle = (i) => {
+        setDailyChecks(prev => ({ ...prev, [today]: { ...(prev[today]||{}), [i]: !(prev[today]?.[i]) } }));
+      };
+      const addItem = () => { if (!newItem.trim()) return; setDailyItems(prev => [...prev, newItem.trim()]); setNewItem(""); };
+      const deleteItem = (i) => setDailyItems(prev => prev.filter((_,idx)=>idx!==i));
+
+      return (
+        <div style={{ paddingTop:20 }}>
+          <div style={{ background:C.surface2, border:`1px solid ${C.border}`, borderRadius:16, padding:"20px", marginBottom:20 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+              <div>
+                <div style={{ fontSize:12, color:C.textSub, marginBottom:2 }}>{today}</div>
+                <div style={{ fontSize:24, fontWeight:700, color:pctColor }}>{pct}%</div>
+                <div style={{ fontSize:12, color:C.textSub }}>{checked} / {total} 완료</div>
+              </div>
+              <PersonFill pct={pct} size={80} />
+            </div>
+            <div style={{ background:C.surface, borderRadius:100, height:6, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:`${pct}%`, background:`linear-gradient(90deg, ${C.greenDim}, ${C.greenLight})`, borderRadius:100, transition:"width 0.4s ease" }}/>
+            </div>
+          </div>
+
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+            <h2 style={{ fontSize:15, fontWeight:700 }}>오늘의 체크리스트</h2>
+            <button onClick={()=>setEditDaily(!editDaily)} style={{ background:editDaily?C.greenDim:C.surface2, color:editDaily?C.text:C.textSub, border:`1px solid ${C.border}`, borderRadius:8, padding:"5px 14px", fontSize:12 }}>
+              {editDaily?"완료":"편집"}
+            </button>
+          </div>
+
+          <div style={{ background:C.surface2, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden", marginBottom:12 }}>
+            {dailyItems.map((item,i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 16px", borderBottom:`1px solid ${C.border}`, background:todayChecked[i]?`${C.greenDim}18`:"transparent", transition:"background 0.15s" }}>
+                <button onClick={()=>toggle(i)} style={{ width:22, height:22, borderRadius:6, border:`2px solid ${todayChecked[i]?C.greenLight:C.border}`, background:todayChecked[i]?C.greenLight:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
+                  {todayChecked[i] && <span style={{ color:"#fff", fontSize:13, fontWeight:700 }}>✓</span>}
+                </button>
+                <span style={{ flex:1, fontSize:14, color:todayChecked[i]?C.textSub:C.text, textDecoration:todayChecked[i]?"line-through":"none", transition:"all 0.2s" }}>{item}</span>
+                {editDaily && <button onClick={()=>deleteItem(i)} style={{ background:"none", color:C.textMuted, fontSize:16 }}>✕</button>}
+              </div>
+            ))}
+          </div>
+
+          {editDaily && (
+            <div style={{ display:"flex", gap:8 }}>
+              <input value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addItem()} placeholder="항목 추가..." style={{ flex:1, background:C.surface2, border:`1px solid ${C.border}`, borderRadius:8, padding:"10px 12px", color:C.text, fontSize:14 }} />
+              <button onClick={addItem} style={{ background:C.greenDim, color:C.text, borderRadius:8, padding:"10px 16px", fontSize:14, fontWeight:600 }}>추가</button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ─── 주간 점검 탭 ─────────────────────────────────────────
+    function WeeklyTab({ weeklyItems, setWeeklyItems, weeklyChecks, setWeeklyChecks, weeklyNotes, setWeeklyNotes, editWeekly, setEditWeekly }) {
+      const wk = weekKey();
+      const [newItem, setNewItem] = useState("");
+      const wChecked = weeklyChecks[wk] || {};
+      const wNotes = weeklyNotes[wk] || { good:"", bad:"", memo:"" };
+      const checked = Object.values(wChecked).filter(Boolean).length;
+      const pct = weeklyItems.length === 0 ? 0 : Math.round(checked / weeklyItems.length * 100);
+      const pctColor = pct >= 80 ? C.greenLight : pct >= 50 ? "#f0a500" : C.textSub;
+
+      const toggle = (i) => setWeeklyChecks(prev => ({ ...prev, [wk]: { ...(prev[wk]||{}), [i]: !(prev[wk]?.[i]) } }));
+      const updateNote = (field, val) => setWeeklyNotes(prev => ({ ...prev, [wk]: { ...(prev[wk]||{good:"",bad:"",memo:""}), [field]: val } }));
+      const addItem = () => { if (!newItem.trim()) return; setWeeklyItems(p => [...p, newItem.trim()]); setNewItem(""); };
+      const deleteItem = (i) => setWeeklyItems(p => p.filter((_,idx)=>idx!==i));
+
+      const notes = [
+        { key:"good", label:"✨ 롤모델답게 행동한 순간", placeholder:"이번 주 잘 한 점을 적어봐..." },
+        { key:"bad", label:"💭 아쉬웠던 순간 & 다음엔 어떻게?", placeholder:"아쉬웠던 점과 개선 방향을 적어봐..." },
+        { key:"memo", label:"📝 나에게 한 마디", placeholder:"이번 주 나에게 하고 싶은 말..." },
+      ];
+
+      return (
+        <div style={{ paddingTop:20 }}>
+          <div style={{ background:C.surface2, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 20px", marginBottom:20 }}>
+            <div style={{ fontSize:12, color:C.textSub, marginBottom:6 }}>{wk}</div>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div>
+                <div style={{ fontSize:22, fontWeight:700, color:pctColor }}>{pct}%</div>
+                <div style={{ fontSize:12, color:C.textSub }}>{checked} / {weeklyItems.length} 완료</div>
+              </div>
+              <PersonFill pct={pct} size={60} />
+            </div>
+            <div style={{ background:C.surface, borderRadius:100, height:5, marginTop:14, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:`${pct}%`, background:`linear-gradient(90deg,${C.greenDim},${C.greenLight})`, borderRadius:100, transition:"width 0.4s" }}/>
+            </div>
+          </div>
+
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+            <h2 style={{ fontSize:15, fontWeight:700 }}>주간 체크리스트</h2>
+            <button onClick={()=>setEditWeekly(!editWeekly)} style={{ background:editWeekly?C.greenDim:C.surface2, color:editWeekly?C.text:C.textSub, border:`1px solid ${C.border}`, borderRadius:8, padding:"5px 14px", fontSize:12 }}>
+              {editWeekly?"완료":"편집"}
+            </button>
+          </div>
+
+          <div style={{ background:C.surface2, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden", marginBottom:16 }}>
+            {weeklyItems.map((item,i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 16px", borderBottom:`1px solid ${C.border}`, background:wChecked[i]?`${C.greenDim}18`:"transparent" }}>
+                <button onClick={()=>toggle(i)} style={{ width:22, height:22, borderRadius:6, border:`2px solid ${wChecked[i]?C.greenLight:C.border}`, background:wChecked[i]?C.greenLight:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
+                  {wChecked[i] && <span style={{ color:"#fff", fontSize:13, fontWeight:700 }}>✓</span>}
+                </button>
+                <span style={{ flex:1, fontSize:14, color:wChecked[i]?C.textSub:C.text, textDecoration:wChecked[i]?"line-through":"none" }}>{item}</span>
+                {editWeekly && <button onClick={()=>deleteItem(i)} style={{ background:"none", color:C.textMuted, fontSize:16 }}>✕</button>}
+              </div>
+            ))}
+          </div>
+
+          {editWeekly && (
+            <div style={{ display:"flex", gap:8, marginBottom:20 }}>
+              <input value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addItem()} placeholder="항목 추가..." style={{ flex:1, background:C.surface2, border:`1px solid ${C.border}`, borderRadius:8, padding:"10px 12px", color:C.text, fontSize:14 }} />
+              <button onClick={addItem} style={{ background:C.greenDim, color:C.text, borderRadius:8, padding:"10px 16px", fontSize:14, fontWeight:600 }}>추가</button>
+            </div>
+          )}
+
+          <h2 style={{ fontSize:15, fontWeight:700, marginBottom:12 }}>이번 주 돌아보기</h2>
+          {notes.map(n => (
+            <div key={n.key} style={{ marginBottom:12 }}>
+              <div style={{ fontSize:13, color:C.textSub, marginBottom:6, fontWeight:500 }}>{n.label}</div>
+              <textarea value={wNotes[n.key]||""} onChange={e=>updateNote(n.key,e.target.value)} placeholder={n.placeholder} rows={3}
+                style={{ width:"100%", background:C.surface2, border:`1px solid ${C.border}`, borderRadius:10, padding:"12px 14px", color:C.text, fontSize:13, lineHeight:1.7 }} />
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // ─── 달력 탭 ──────────────────────────────────────────────
+    function CalendarTab({ dailyChecks, dailyItems, calMonth, setCalMonth }) {
+      const { y, m } = calMonth;
+      const days = getDaysInMonth(y, m);
+      const firstDay = getFirstDayOfMonth(y, m);
+      const dayNames = ["일","월","화","수","목","금","토"];
+      const monthNames = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
+
+      const getPct = (day) => {
+        const key = `${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+        const checked = dailyChecks[key] || {};
+        const cnt = Object.values(checked).filter(Boolean).length;
+        return dailyItems.length === 0 ? 0 : Math.round(cnt / dailyItems.length * 100);
+      };
+
+      const getColor = (pct) => {
+        if (pct === 0) return C.surface2;
+        if (pct < 30) return "#0d3320";
+        if (pct < 60) return "#1a5c36";
+        if (pct < 80) return "#238636";
+        return "#2ea043";
+      };
+
+      const today = new Date();
+      const isToday = (day) => today.getFullYear()===y && today.getMonth()===m && today.getDate()===day;
+
+      let totalPct = 0, cnt = 0;
+      for (let d = 1; d <= days; d++) {
+        const p = getPct(d);
+        if (p > 0) { totalPct += p; cnt++; }
+      }
+      const avgPct = cnt > 0 ? Math.round(totalPct / cnt) : 0;
+
+      const cells = [];
+      for (let i = 0; i < firstDay; i++) cells.push(null);
+      for (let d = 1; d <= days; d++) cells.push(d);
+
+      return (
+        <div style={{ paddingTop:20 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+            <button onClick={()=>setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1})} style={{ background:C.surface2, border:`1px solid ${C.border}`, color:C.text, borderRadius:8, padding:"8px 14px", fontSize:14 }}>◀</button>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:18, fontWeight:700 }}>{y}년 {monthNames[m]}</div>
+              {cnt > 0 && <div style={{ fontSize:12, color:C.greenLight, marginTop:2 }}>이번달 평균 {avgPct}%</div>}
+            </div>
+            <button onClick={()=>setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1})} style={{ background:C.surface2, border:`1px solid ${C.border}`, color:C.text, borderRadius:8, padding:"8px 14px", fontSize:14 }}>▶</button>
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:4 }}>
+            {dayNames.map(d => <div key={d} style={{ textAlign:"center", fontSize:11, color:C.textSub, padding:"4px 0" }}>{d}</div>)}
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4 }}>
+            {cells.map((day,i) => {
+              if (!day) return <div key={`e-${i}`}/>;
+              const pct = getPct(day);
+              return (
+                <div key={day} style={{ background:getColor(pct), border:isToday(day)?`2px solid ${C.greenLight}`:`1px solid ${C.border}`, borderRadius:8, aspectRatio:"1", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", transition:"all 0.2s" }}>
+                  <span style={{ fontSize:12, fontWeight:isToday(day)?700:400, color:pct>0?C.text:C.textMuted }}>{day}</span>
+                  {pct > 0 && <span style={{ fontSize:9, color:pct>=80?"#7ee787":pct>=50?"#f0a500":"#58a6ff", marginTop:1 }}>{pct}%</span>}
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:20, justifyContent:"center" }}>
+            <span style={{ fontSize:12, color:C.textSub }}>적음</span>
+            {["#0d3320","#1a5c36","#238636","#2ea043"].map(c => (
+              <div key={c} style={{ width:16, height:16, borderRadius:4, background:c, border:`1px solid ${C.border}` }}/>
+            ))}
+            <span style={{ fontSize:12, color:C.textSub }}>많음</span>
+          </div>
+          <div style={{ textAlign:"center", marginTop:8, fontSize:11, color:C.textMuted }}>깊이 들어간 초록 = 더 높은 달성률</div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
